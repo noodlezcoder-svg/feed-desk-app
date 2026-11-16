@@ -1,0 +1,45 @@
+<%- include('partials/head', { title: 'Sign in' }) %>
+<section class="card narrow">
+  <h1>Sign in</h1>
+  <% if (!configured) { %>
+    <p class="muted">Firebase is not configured yet. Set FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN and FIREBASE_PROJECT_ID, then restart.</p>
+  <% } else { %>
+    <p class="muted">Use the Google account on the allowlist.</p>
+    <button id="google" type="button" class="primary">Sign in with Google</button>
+    <p id="error" class="error-text" role="alert"></p>
+  <% } %>
+</section>
+<% if (configured) { %>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getAuth, GoogleAuthProvider, inMemoryPersistence, setPersistence, signInWithPopup, signOut }
+    from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+  const auth = getAuth(initializeApp(<%- JSON.stringify(firebase).replace(/</g, '\\u003c') %>));
+  // The server keeps the session (httpOnly cookie), so the browser keeps nothing.
+  await setPersistence(auth, inMemoryPersistence);
+
+  const btn = document.getElementById('google');
+  const out = document.getElementById('error');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    out.textContent = '';
+    try {
+      const cred = await signInWithPopup(auth, new GoogleAuthProvider());
+      const idToken = await cred.user.getIdToken();
+      const res = await fetch('/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+      await signOut(auth);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Sign-in failed.');
+      location.href = '/';
+    } catch (e) {
+      out.textContent = e.message;
+      btn.disabled = false;
+    }
+  });
+</script>
+<% } %>
+<%- include('partials/foot') %>

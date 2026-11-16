@@ -1,0 +1,12 @@
+</main>
+<script>
+  // Show progress on slow actions (Claude drafts, Whop imports, pushes).
+  document.querySelectorAll('form[data-busy]').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      var btn = form.querySelector('button[type=submit]');
+      if (btn) { btn.textContent = form.dataset.busy; btn.disabled = true; }
+    });
+  });
+</script>
+</body>
+</html>

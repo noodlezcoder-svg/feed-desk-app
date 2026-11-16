@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= locals.title ? title + ' · ' : '' %>Feed Desk</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">Feed Desk</a>
+  <% if (locals.user) { %>
+    <nav>
+      <a href="/">Products</a>
+      <a href="/settings">Settings</a>
+      <form method="post" action="/logout" class="inline">
+        <button class="link" type="submit" title="<%= user.email %>">Sign out</button>
+      </form>
+    </nav>
+  <% } %>
+</header>
+<main>
+<% if (locals.msg) { %><p class="notice"><%= msg %></p><% } %>
+<% if (locals.errors && errors.length) { %>
+  <div class="notice error"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div>
+<% } %>

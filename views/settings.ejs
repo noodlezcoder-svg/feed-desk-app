@@ -1,0 +1,38 @@
+<%- include('partials/head', { title: 'Settings' }) %>
+<h1>Settings</h1>
+<div class="grid two">
+  <section class="card">
+    <form method="post" action="/settings" class="fields">
+      <h2>Whop</h2>
+      <label>Whop business ID <small>(biz_…)</small><input name="whopAccountId" value="<%= settings.whopAccountId %>"></label>
+      <label>Store URL <small>(your own domain, e.g. https://shop.example.com)</small><input name="storeBaseUrl" type="url" value="<%= settings.storeBaseUrl %>"></label>
+      <label>Brand<input name="brand" value="<%= settings.brand %>"></label>
+
+      <h2>Merchant Center</h2>
+      <label>Merchant Center ID<input name="merchantAccountId" inputmode="numeric" value="<%= settings.merchantAccountId %>"></label>
+      <label>API data source ID<input name="dataSourceId" inputmode="numeric" value="<%= settings.dataSourceId %>"></label>
+      <div class="row">
+        <label>Language<input name="contentLanguage" value="<%= settings.contentLanguage %>" maxlength="2"></label>
+        <label>Feed label<input name="feedLabel" value="<%= settings.feedLabel %>" maxlength="20"></label>
+      </div>
+      <div class="actions"><button type="submit" class="primary">Save settings</button></div>
+    </form>
+    <p class="muted small">API keys are not stored here. They are environment variables on the server (see README).</p>
+  </section>
+
+  <section class="card">
+    <h2>Connection check</h2>
+    <p class="muted small">Read-only. Checks Google sign-in, the Merchant Center account, Cloud project registration and the data source.</p>
+    <form method="post" action="/settings/check" data-busy="Checking…">
+      <button type="submit">Check Merchant Center</button>
+    </form>
+    <% if (checks) { %>
+      <ul class="checks">
+        <% checks.forEach(function (c) { %>
+          <li class="<%= c.ok ? 'ok' : 'bad' %>"><b><%= c.ok ? '✓' : '✗' %> <%= c.label %></b><br><span class="small"><%= c.detail %></span></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+<%- include('partials/foot') %>

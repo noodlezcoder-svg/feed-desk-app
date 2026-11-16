@@ -1,0 +1,103 @@
+<% var base = '/products/' + encodeURIComponent(product.id); var s = product.source; %>
+<%- include('../partials/head', { title: (feed && feed.title) || s.productTitle }) %>
+<div class="bar">
+  <div>
+    <a href="/" class="muted small">← Products</a>
+    <h1><%= s.productTitle %><% if (s.variantTitle) { %> <span class="muted">· <%= s.variantTitle %></span><% } %></h1>
+  </div>
+  <span class="badge s-<%= product.status %>"><%= product.status %></span>
+</div>
+
+<div class="grid">
+  <!-- 1. What Whop says (read-only) -->
+  <section class="card">
+    <h2>Whop</h2>
+    <% if (s.imageUrl) { %><img class="thumb" src="<%= s.imageUrl %>" alt=""><% } %>
+    <dl>
+      <dt>Price</dt><dd><%= s.price %> <%= s.currency %></dd>
+      <dt>Stock</dt><dd><%= s.inStock ? 'In stock' : 'Out of stock' %></dd>
+      <dt>Visible</dt><dd><%= s.visible ? 'Yes' : 'No, hidden on Whop' %></dd>
+      <% if (s.sku) { %><dt>SKU</dt><dd><%= s.sku %></dd><% } %>
+      <% Object.keys(s.attributes).forEach(function (k) { %><dt><%= k %></dt><dd><%= s.attributes[k] %></dd><% }) %>
+      <dt>Variant ID</dt><dd class="small"><%= product.id %></dd>
+      <dt>Fetched</dt><dd class="small"><%= s.fetchedAt.slice(0, 16).replace('T', ' ') %></dd>
+    </dl>
+    <% if (s.headline) { %><p><b><%= s.headline %></b></p><% } %>
+    <% if (s.description) { %><p class="pre small"><%= s.description %></p><% } %>
+    <p class="muted small">Price and stock always come from Whop when you push.</p>
+  </section>
+
+  <!-- 2. The listing you push (editable) -->
+  <section class="card">
+    <div class="bar">
+      <h2>Listing</h2>
+      <form method="post" action="<%= base %>/draft" data-busy="Claude is drafting…">
+        <button type="submit">Draft with Claude</button>
+      </form>
+    </div>
+    <% if (product.claude) { %>
+      <p class="muted small">Drafted by <%= product.claude.model %> on <%= product.claude.draftedAt.slice(0, 16).replace('T', ' ') %>.</p>
+      <% if (product.claude.policyRisk) { %><p class="notice warn"><b>Policy risk:</b> <%= product.claude.policyRisk %></p><% } %>
+    <% } %>
+    <form method="post" action="<%= base %>" class="fields">
+      <label>Title <small>(max 150)</small><input name="title" maxlength="150" value="<%= feed.title %>" required></label>
+      <label>Description <small>(max 5000)</small><textarea name="description" rows="8" maxlength="5000" required><%= feed.description %></textarea></label>
+      <label>Link <small>(page on your own domain)</small><input name="link" type="url" value="<%= feed.link %>" required></label>
+      <label>Image link<input name="imageLink" type="url" value="<%= feed.imageLink %>" required></label>
+      <div class="row">
+        <label>Brand<input name="brand" value="<%= feed.brand %>" required></label>
+        <label>Condition
+          <select name="condition">
+            <% ['NEW', 'USED', 'REFURBISHED'].forEach(function (c) { %><option <%= feed.condition === c ? 'selected' : '' %>><%= c %></option><% }) %>
+          </select>
+        </label>
+      </div>
+      <label>Google product category<input name="googleProductCategory" value="<%= feed.googleProductCategory %>"></label>
+      <label>Product type<input name="productType" value="<%= feed.productType %>"></label>
+      <label>Highlights <small>(one per line)</small><textarea name="productHighlights" rows="4"><%= (feed.productHighlights || []).join('\n') %></textarea></label>
+      <div class="row">
+        <label>Color<input name="color" value="<%= feed.color %>"></label>
+        <label>Size<input name="size" value="<%= feed.size %>"></label>
+        <label>Material<input name="material" value="<%= feed.material %>"></label>
+      </div>
+      <div class="actions">
+        <button type="submit" name="action" value="save">Save draft</button>
+        <button type="submit" name="action" value="approve" class="primary">Save &amp; approve</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- 3. Google Merchant Center -->
+  <section class="card">
+    <h2>Google</h2>
+    <dl>
+      <dt>State</dt><dd><%= product.gmc.state.replace('_', ' ') %></dd>
+      <% if (product.gmc.pushedAt) { %><dt>Pushed</dt><dd class="small"><%= product.gmc.pushedAt.slice(0, 16).replace('T', ' ') %></dd><% } %>
+      <% if (product.gmc.checkedAt) { %><dt>Checked</dt><dd class="small"><%= product.gmc.checkedAt.slice(0, 16).replace('T', ' ') %></dd><% } %>
+    </dl>
+    <% if (product.gmc.lastError) { %><p class="notice error small"><%= product.gmc.lastError %></p><% } %>
+    <% if (product.gmc.issues.length) { %>
+      <h3>Issues</h3>
+      <ul class="issues">
+        <% product.gmc.issues.forEach(function (i) { %>
+          <li><span class="badge"><%= i.severity || 'issue' %></span> <%= i.description || i.code %><% if (i.attribute) { %> <span class="muted">(<%= i.attribute %>)</span><% } %></li>
+        <% }) %>
+      </ul>
+    <% } %>
+    <div class="stack">
+      <form method="post" action="<%= base %>/push" data-busy="Pushing…">
+        <button type="submit" class="primary" <%= product.status === 'approved' ? '' : 'disabled' %>>Push to Merchant Center</button>
+      </form>
+      <% if (product.status !== 'approved') { %><p class="muted small">Save &amp; approve the listing to enable Push.</p><% } %>
+      <% if (product.gmc.pushedAt) { %>
+        <form method="post" action="<%= base %>/status" data-busy="Checking…">
+          <button type="submit">Refresh status</button>
+        </form>
+        <form method="post" action="<%= base %>/remove" onsubmit="return confirm('Remove this product from Merchant Center? You can push it again later.')">
+          <button type="submit" class="danger">Remove from Merchant Center</button>
+        </form>
+      <% } %>
+    </div>
+  </section>
+</div>
+<%- include('../partials/foot') %>
